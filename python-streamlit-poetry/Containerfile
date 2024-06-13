@@ -1,0 +1,24 @@
+FROM python:3.12
+
+# Create app directory
+WORKDIR /app
+
+#RUN apt-get update && apt-get install --no-install-recommends -y gcc g++
+RUN POETRY_HOME=/opt/poetry && python3 -m venv $POETRY_HOME && $POETRY_HOME/bin/pip install poetry
+
+EXPOSE 8501
+
+# Bundle app source
+COPY . /app
+
+RUN /opt/poetry/bin/poetry install
+
+RUN cat <<EOF > /streamlit_cmd.sh
+run_args="run \$app_file"
+if [[ "\$app_file" = "hello" ]]; then
+    run_args="hello"
+fi
+/opt/poetry/bin/poetry run streamlit \$run_args --server.address=0.0.0.0 --server.baseUrlPath=\$CL_APP_PATH
+EOF
+
+CMD ["bash", "-x", "/streamlit_cmd.sh"]
