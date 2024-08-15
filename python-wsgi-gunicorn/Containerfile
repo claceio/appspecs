@@ -1,0 +1,42 @@
+# Use an official Python runtime as a parent image
+ARG PYTHON_VERSION=3.12.5-slim
+FROM python:${PYTHON_VERSION}
+
+# Set environment variables to prevent Python from writing pyc files to disc and buffer output
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Create a non-root user and group
+RUN groupadd --gid 1000 appuser && \
+    useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser
+
+# Set working directory
+WORKDIR /app
+
+# Change ownership of the app directory to the non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-root user
+USER appuser
+
+# Install Gunicorn
+RUN pip install --no-cache-dir gunicorn
+
+# Install dependencies
+COPY --chown=appuser:appuser requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the current directory contents into the container at /app
+COPY --chown=appuser:appuser . /app/
+
+# Expose the port on which the Flask app runs
+EXPOSE 8000
+
+# Set default values for workers and threads (can be overridden at runtime)
+ENV WORKERS=2
+ENV THREADS=4
+ENV APP_MODULE=app:app
+
+# Run the application with Gunicorn
+CMD /home/appuser/.local/bin/gunicorn --bind 0.0.0.0:8000 $APP_MODULE --workers $WORKERS --threads $THREADS
+
