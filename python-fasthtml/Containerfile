@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-ARG PYTHON_VERSION=3.12.5
+ARG PYTHON_VERSION=3.12.5-slim
 FROM python:${PYTHON_VERSION}
 
 # Set environment variables to prevent Python from writing pyc files to disc and buffer output
