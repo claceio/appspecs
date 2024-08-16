@@ -1,0 +1,41 @@
+# Use an official Python runtime as a parent image
+ARG PYTHON_VERSION=3.12.5
+FROM python:${PYTHON_VERSION}
+
+# Set environment variables to prevent Python from writing pyc files to disc and buffer output
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Create a non-root user and group
+RUN groupadd --gid 1000 appuser && \
+    useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser
+
+# Set working directory
+WORKDIR /app
+
+# Change ownership of the app directory to the non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-root user
+USER appuser
+
+# Install uvicorn
+RUN pip install --no-cache-dir uvicorn
+
+# Install dependencies
+COPY --chown=appuser:appuser requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the current directory contents into the container at /app
+COPY --chown=appuser:appuser . /app/
+
+# Expose the port on which the app runs
+EXPOSE 5000
+
+# Set default values for workers (can be overridden at runtime)
+ENV APP_MODULE=app:app
+ENV WORKERS=2
+
+# Run the application with uvicorn
+CMD /home/appuser/.local/bin/uvicorn --root-path "$CL_APP_PATH" \
+    --host 0.0.0.0 --port 5000 --workers $WORKERS $APP_MODULE

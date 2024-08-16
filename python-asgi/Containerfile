@@ -19,8 +19,8 @@ RUN chown -R appuser:appuser /app
 # Switch to the non-root user
 USER appuser
 
-# Install Gunicorn
-RUN pip install --no-cache-dir gunicorn
+# Install uvicorn
+RUN pip install --no-cache-dir uvicorn
 
 # Install dependencies
 COPY --chown=appuser:appuser requirements.txt /app/
@@ -29,14 +29,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the current directory contents into the container at /app
 COPY --chown=appuser:appuser . /app/
 
-# Expose the port on which the Flask app runs
-EXPOSE 8000
+# Expose the port on which the app runs
+EXPOSE 5000
 
-# Set default values for workers and threads (can be overridden at runtime)
-ENV WORKERS=2
-ENV THREADS=4
+# Set default values for workers (can be overridden at runtime)
 ENV APP_MODULE=app:app
+ENV WORKERS=2
 
-# Run the application with Gunicorn
-CMD /home/appuser/.local/bin/gunicorn --bind 0.0.0.0:8000 $APP_MODULE --workers $WORKERS --threads $THREADS
+# Run the application with uvicorn
+CMD /home/appuser/.local/bin/uvicorn --root-path "$CL_APP_PATH" \
+    --host 0.0.0.0 --port 5000 --workers $WORKERS $APP_MODULE 
 
