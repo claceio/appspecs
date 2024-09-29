@@ -1,0 +1,40 @@
+# Use an official Python runtime as a parent image
+ARG PYTHON_VERSION=3.12.5-slim
+FROM python:${PYTHON_VERSION}
+
+# Set environment variables to prevent Python from writing pyc files to disc and buffer output
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Create a non-root user and group
+RUN groupadd --gid 1000 appuser && \
+    useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser
+
+# Create app directory
+WORKDIR /app
+
+# Change ownership of the app directory to the non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-root user
+USER appuser
+
+# Install gradio
+RUN pip3 install --no-cache-dir gradio
+
+# Install app dependencies
+COPY --chown=appuser:appuser requirements.txt ./
+RUN pip3 install -r requirements.txt
+
+# Bundle app source
+COPY --chown=appuser:appuser . /app
+
+EXPOSE 7860
+
+RUN cat <<EOF > /tmp/gradio_cmd.sh
+export GRADIO_ROOT_PATH=\$CL_APP_PATH
+export GRADIO_SERVER_NAME=0.0.0.0
+python \$APP_FILE
+EOF
+
+CMD ["bash", "-x", "/tmp/gradio_cmd.sh"]
