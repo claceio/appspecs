@@ -1,0 +1,66 @@
+############################
+# STEP 1: Build the Go app #
+############################
+
+# Use an official Go image as the build environment
+ARG GO_VERSION=1.23.3
+ARG APP_NAME=app
+
+FROM golang:${GO_VERSION} AS builder
+
+# Build arguments
+ARG APP_NAME
+ARG BUILD_FLAGS=""
+ARG GOOS=
+ARG GOARCH=
+ARG MAIN_PACKAGE=.
+
+# Set environment variables for Go build
+ENV CGO_ENABLED=0
+ENV GOOS=${GOOS}
+ENV GOARCH=${GOARCH}
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy go.mod and go.sum files to download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the source code into the container
+COPY . .
+
+# Build the Go application
+RUN go build -ldflags="-s -w" -o ${APP_NAME} ${BUILD_FLAGS} ${MAIN_PACKAGE}
+
+############################
+# STEP 2: Create final image #
+############################
+
+# Use a minimal Docker image for the runtime
+FROM alpine:latest
+
+# Re-declare build arguments
+ARG APP_NAME
+
+# Set the same environment variable
+ENV APP_NAME=${APP_NAME}
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/${APP_NAME} .
+
+# Create a non-root user and group
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Change ownership of the app directory to the non-root user
+RUN chown -R appuser:appgroup /app
+
+# Switch to the non-root user
+USER appuser
+
+# Run the binary
+ENTRYPOINT /app/${APP_NAME} ${APP_ARGS}
+
