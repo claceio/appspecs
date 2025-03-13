@@ -13,7 +13,7 @@ WORKDIR /app
 COPY requirements.txt ./
 
 RUN pip3 install -r requirements.txt
-RUN pip3 install streamlit
+RUN pip3 install streamlit setuptools
 
 EXPOSE 8501
 
