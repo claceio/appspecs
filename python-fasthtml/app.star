@@ -8,6 +8,6 @@ app = ace.app(param.app_name,
               container=container.config(container.AUTO),
               permissions=[
                   ace.permission("proxy.in", "config", [container.URL]),
-                  ace.permission("container.in", "config", [container.AUTO])
+                  ace.permission("container.in", "config", [container.AUTO], secrets=param.secrets)
               ]
        ) 
