@@ -1,0 +1,27 @@
+# Use an official Python runtime as a parent image
+ARG PYTHON_VERSION=3.12.5-slim
+FROM python:${PYTHON_VERSION}
+
+# Set environment variables to prevent Python from writing pyc files to disc and buffer output
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Create app directory
+WORKDIR /app
+
+# Install app dependencies
+COPY requirements.txt ./
+
+RUN pip3 install -r requirements.txt
+RUN pip3 install nicegui itsdangerous isort docutils requests latex2mathml setuptools
+
+EXPOSE 8080
+
+# Bundle app source
+COPY . /app
+
+RUN cat <<EOF > /fastgui_cmd.sh
+python \$app_file
+EOF
+
+CMD ["bash", "-x", "/fastgui_cmd.sh"]
